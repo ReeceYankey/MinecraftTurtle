@@ -44,6 +44,22 @@ function Bot:move(cardinal, num)
     end
 end
 
+function Bot:moveVert(direction, num)
+    for i = 1, num do
+        self:refuelToLevel(1)
+        if direction == 1 then
+            assert(turtle.up())
+            self.y = self.y + 1 
+        elseif direction == 0 then
+            assert(turtle.down())
+            self.y = self.y - 1 
+        else
+            print("invalid vertical direction")
+            error()
+        end
+    end
+end
+
 function Bot:turn(direction, num)
     if num == nil then
         num = 1

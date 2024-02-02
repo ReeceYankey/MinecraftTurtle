@@ -80,11 +80,11 @@ end
 
 function Path:perform_walk(bot)
     local i = 1
-    while i < #self.walk do
+    while i <= #self.walk do
         local direction = self.walk:sub(i, i)
         local times = self.walk:sub(i + 1, i + 1)
         local incr = 3
-        if times == nil or times == "" or times == " " or tonumber(times) == nil then
+        if tonumber(times) == nil then
             print("{" .. times .. "}")
             times = 1
             incr = 2 
