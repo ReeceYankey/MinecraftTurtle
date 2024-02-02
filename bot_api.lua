@@ -41,8 +41,10 @@ function Bot:move(direction, num)
             self.y = self.y + 1 
         end
     elseif direction == "d" then
+        for i = 1, num do
             assert(turtle.down())
             self.y = self.y - 1 
+        end
     else
         self:face_cardinal(direction)
         for i = 1, num do
