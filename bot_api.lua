@@ -34,6 +34,10 @@ function Bot:face_cardinal(cardinal)
 end
 
 function Bot:move(direction, num)
+    if num == nil then
+        num = 1
+    end
+    print(direction .. " " .. num)
     if direction == "u" then
         for i = 1, num do
             self:refuelToLevel(1)

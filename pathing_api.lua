@@ -41,7 +41,7 @@ end
 --  self.b is second waypoint
 --  self.walk is list of Steps to perform the walk from a to b
 --   directions are {n, e, s, w, u, d} optionally followed by a number
---  self.walk example: "n2 e4 s w1 u2 d3"
+--  self.walk example: {n, e, s, 2, w}
 
 Path = {}
 Path.__index = Path
@@ -50,28 +50,23 @@ function Path.new(a, b, walk)
     local self = setmetatable({}, Path)
     self.a = a
     self.b = b
-    if walk == nil or #walk <= 0 then
-        self.walk = Path:basic_walk(a, b)
-    else
-        self.walk = walk 
-    end
+    self.walk = walk or self:basic_walk(a, b)
     return self
 end
 
 function Path:calculate_distance()
     local total_distance = 0
     local i = 1
-    while i < #self.walk do
-        local direction = self.walk:sub(i, i)
-        local times = self.walk:sub(i + 1, i + 1)
-        local incr = 3
-        if times == " " then
+    while i <= #self.walk do
+        local direction = self.walk[i]
+        local times = self.walk[i + 1]
+        local incr = 2
+        if self.walk[i + 1] == nil or type(self.walk[i + 1]) == "string" then
             times = 1
-            incr = 2 
+            incr = 1
         end
-        -- print("direction: " .. direction .. ", times: " .. times)
         if direction == "n" or direction == "e" or direction == "s" or direction == "w" or direction == "u" or direction == "d" then
-            total_distance = total_distance + times 
+            total_distance = total_distance + times
         end
         i = i + incr
     end
@@ -81,15 +76,13 @@ end
 function Path:perform_walk(bot)
     local i = 1
     while i <= #self.walk do
-        local direction = self.walk:sub(i, i)
-        local times = self.walk:sub(i + 1, i + 1)
-        local incr = 3
-        if tonumber(times) == nil then
-            print("{" .. times .. "}")
+        local direction = self.walk[i]
+        local times = self.walk[i + 1]
+        local incr = 2
+        if self.walk[i + 1] == nil or type(self.walk[i + 1]) == "string" then
             times = 1
-            incr = 2 
+            incr = 1
         end
-        print(direction .. " " .. times)
         bot:move(direction, times)
         i = i + incr
     end
@@ -101,33 +94,50 @@ function Path:basic_walk(a, b)
     elseif a.x ~= b.x and a.y == b.y and a.z == b.z then
         local d = b.x - a.x
         if d < 0 then
-            return "w" .. tostring(math.abs(d))
+            return {"w", math.abs(d)}
         else
-            return "e" .. d
+            return {"e", d}
         end
     elseif a.x == b.x and a.y ~= b.y and a.z == b.z then
         local d = b.y - a.y
         if d < 0 then
-            return "d" .. tostring(math.abs(d))
+            return {"d", math.abs(d)}
         else
-            return "u" .. d
+            return {"u", d}
         end
     elseif a.x == b.x and a.y == b.y and a.z ~= b.z then
         local d = b.z - a.z
         if d < 0 then
-            return "n" .. tostring(math.abs(d))
+            return {"n", math.abs(d)}
         else
-            return "s" .. d
+            return {"s", d}
         end
     else
-        print("Not a basic walk")
+        print("Not a basic walk: " .. self:tostring())
         error()
     end
 end
 
-
 function Path:tostring()
-    return self.a.name .. "->" .. self.b.name .. ", [" .. self.walk .. "]"
+    return tostring(self.a.name) .. "->" .. tostring(self.b.name) .. ", {" .. tostring(self.walk) .. "}"
 end
 
 -- API Functions
+
+function find_path(start, dest)
+    local queue = {}
+    table.insert(queue, start)
+
+    while #queue > 0 do
+        local cur = table.remove(queue) 
+        if cur == dest then
+            return true
+        end
+        for n in cur.next do
+            n = n.b
+            table.insert(queue, n)
+        end
+    end
+    return false
+end
+
