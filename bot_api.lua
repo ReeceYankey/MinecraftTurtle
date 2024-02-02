@@ -27,8 +27,8 @@ function Bot:face_cardinal(cardinal)
     elseif (self.facing) ~= cardinal then
         self:turn("a")
     end
-    print(self.facing)
-    print(cardinal)
+    -- print(self.facing)
+    -- print(cardinal)
     assert(self.facing == cardinal)
     
     -- while self.facing ~= cardinal do
