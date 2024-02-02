@@ -1,5 +1,5 @@
-os.loadAPI("bot_api")
-os.loadAPI("pathing_api")
+os.loadAPI("bot_api.lua")
+os.loadAPI("pathing_api.lua")
 
 local a = pathing_api.Waypoint.new("a", 35, 63, 85)
 local b = pathing_api.Waypoint.new("b", 35, 63, 79)

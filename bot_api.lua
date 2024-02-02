@@ -19,10 +19,22 @@ function Bot:face_cardinal(cardinal)
     if type(cardinal) == "string" then
         cardinal = self:cardinal_to_num(cardinal)
     end
-    while self.facing ~= cardinal do
+
+    if (self.facing + 1) % 4 == cardinal then
         self:turn("r")
-        -- print("facing: " .. self.facing)
+    elseif (self.facing -1) % 4 == cardinal then
+        self:turn("l")
+    elseif (self.facing) ~= cardinal then
+        self:turn("a")
     end
+    print(self.facing)
+    print(cardinal)
+    assert(self.facing == cardinal)
+    
+    -- while self.facing ~= cardinal do
+    --     self:turn("r")
+    --     -- print("facing: " .. self.facing)
+    -- end
 end
 
 function Bot:move(cardinal, num)
@@ -70,7 +82,7 @@ function Bot:turn(direction, num)
             self.facing = (self.facing + 1) % 4
         elseif direction == "l" then
             assert(turtle.turnLeft())
-            self.facing = (self.facing + 1) % 4
+            self.facing = (self.facing - 1) % 4
         elseif direction == "a" then
             assert(turtle.turnRight())
             assert(turtle.turnRight())
