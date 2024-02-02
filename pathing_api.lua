@@ -119,7 +119,16 @@ function Path:basic_walk(a, b)
 end
 
 function Path:tostring()
-    return tostring(self.a.name) .. "->" .. tostring(self.b.name) .. ", {" .. tostring(self.walk) .. "}"
+    local walk_string = "{"
+    for i = 1, #self.walk do
+        if i < #self.walk then
+            walk_string = walk_string .. tostring(self.walk[i]) .. ", "
+        else
+            walk_string = walk_string .. tostring(self.walk[i])
+        end
+    end
+    walk_string = walk_string .. "}"
+    return tostring(self.a.name) .. "->" .. tostring(self.b.name) .. ", " .. walk_string
 end
 
 -- API Functions
