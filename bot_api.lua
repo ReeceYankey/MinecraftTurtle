@@ -6,6 +6,9 @@ Bot.__index = Bot
 --  3   1
 --    2
 
+--  up - 4
+--  down - 5
+
 function Bot.new(x, y, z, facing)
     local self = setmetatable({}, Bot)
     self.facing = facing or 0
@@ -27,47 +30,33 @@ function Bot:face_cardinal(cardinal)
     elseif (self.facing) ~= cardinal then
         self:turn("a")
     end
-    -- print(self.facing)
-    -- print(cardinal)
     assert(self.facing == cardinal)
-    
-    -- while self.facing ~= cardinal do
-    --     self:turn("r")
-    --     -- print("facing: " .. self.facing)
-    -- end
 end
 
-function Bot:move(cardinal, num)
-    self:face_cardinal(cardinal)
-    for i = 1, num do
-        self:refuelToLevel(1)
-        assert(turtle.forward())
-        if self.facing == 0 then
-            self.z = self.z - 1
-        elseif self.facing == 1 then
-            self.x = self.x + 1
-        elseif self.facing == 2 then
-            self.z = self.z + 1
-        else 
-            self.x = self.x - 1
-        end
-        -- print(self:tostring())
-        -- print(num)
-    end
-end
-
-function Bot:moveVert(direction, num)
-    for i = 1, num do
-        self:refuelToLevel(1)
-        if direction == 1 then
+function Bot:move(direction, num)
+    if direction == "u" then
+        for i = 1, num do
+            self:refuelToLevel(1)
             assert(turtle.up())
             self.y = self.y + 1 
-        elseif direction == 0 then
+        end
+    elseif direction == "d" then
             assert(turtle.down())
             self.y = self.y - 1 
-        else
-            print("invalid vertical direction")
-            error()
+    else
+        self:face_cardinal(direction)
+        for i = 1, num do
+            self:refuelToLevel(1)
+            assert(turtle.forward())
+            if self.facing == 0 then
+                self.z = self.z - 1
+            elseif self.facing == 1 then
+                self.x = self.x + 1
+            elseif self.facing == 2 then
+                self.z = self.z + 1
+            else 
+                self.x = self.x - 1
+            end
         end
     end
 end
