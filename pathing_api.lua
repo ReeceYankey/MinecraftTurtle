@@ -33,7 +33,7 @@ function Waypoint:tostring()
         end
     end
     next_string = next_string .. "}"
-    return self.name .. ": " .. "x: " .. self.x .. ", y: " .. self.y .. ", z: " .. self.z .. ", next_string: " .. next_string
+    return self.name .. ": " .. "x: " .. self.x .. ", y: " .. self.y .. ", z: " .. self.z .. ", next: " .. next_string
 end
 
 -- Path
@@ -90,7 +90,7 @@ end
 
 function Path:basic_walk(a, b)
     if a.x == b.x and a.y == b.y and a.z == b.z then
-        return "" 
+        return {} 
     elseif a.x ~= b.x and a.y == b.y and a.z == b.z then
         local d = b.x - a.x
         if d < 0 then
