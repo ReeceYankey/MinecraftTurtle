@@ -119,7 +119,10 @@ function Bot:refuelToLevel(level)
     while turtle.getFuelLevel() < level do
         turtle.select(16)
         result, err_status = turtle.refuel(level - turtle.getFuelLevel())
-        assert(result)
+        if result == false then
+            print("no fuel :(")
+            error()
+        end
     end
     assert(turtle.select(cur_select))
     return true
@@ -141,5 +144,5 @@ function Bot:cardinal_to_num(cardinal)
 end
 
 function Bot:tostring()
-    return "x: " .. self.x .. ", y: " .. self.y .. ", z: " .. self.z .. ", facing: " .. self.facing
+    return "x: " .. tostring(self.x) .. ", y: " .. tostring(self.y) .. ", z: " .. tostring(self.z) .. ", facing: " .. tostring(self.facing)
 end
