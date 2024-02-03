@@ -75,6 +75,7 @@ function Bot:move(direction, num)
             end
         end
     else
+        self:face_cardinal(direction)
         for i = 1, num do
             self:refuelToLevel(1)
             assert(turtle.forward())
