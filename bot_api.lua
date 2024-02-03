@@ -11,10 +11,20 @@ Bot.__index = Bot
 
 function Bot.new(x, y, z, facing)
     local self = setmetatable({}, Bot)
-    self.facing = facing or 0
-    self.x = x
-    self.y = y
-    self.z = z
+    if facing == "n" then
+        self.facing = 0
+    elseif facing == "e" then
+        self.facing = 1
+    elseif facing == "s" then
+        self.facing = 2
+    elseif facing == "w" then
+        self.facing = 3
+    else
+        self.facing = facing or 0
+    end
+    self.x = x or 0
+    self.y = y or 0
+    self.z = z or 0
     return self
 end
 
@@ -46,11 +56,25 @@ function Bot:move(direction, num)
         end
     elseif direction == "d" then
         for i = 1, num do
+            self:refuelToLevel(1)
             assert(turtle.down())
             self.y = self.y - 1 
         end
+    elseif direction == "f" then
+        for i = 1, num do
+            self:refuelToLevel(1)
+            assert(turtle.forward())
+            if self.facing == 0 then
+                self.z = self.z - 1
+            elseif self.facing == 1 then
+                self.x = self.x + 1
+            elseif self.facing == 2 then
+                self.z = self.z + 1
+            else 
+                self.x = self.x - 1
+            end
+        end
     else
-        self:face_cardinal(direction)
         for i = 1, num do
             self:refuelToLevel(1)
             assert(turtle.forward())
