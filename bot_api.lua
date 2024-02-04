@@ -11,6 +11,7 @@ Bot.__index = Bot
 
 function Bot.new(x, y, z, facing, excluded_slots)
     local self = setmetatable({}, Bot)
+    -- Convert facing string to number
     if facing == "n" then
         self.facing = 0
     elseif facing == "e" then
@@ -31,11 +32,16 @@ end
 
 -- MOVEMENT -- 
 
+-- face_cardinal
+-- turn bot to face cardinal direction
+-- cardinal <string> {"n", "e", "s", "w"}
 function Bot:face_cardinal(cardinal)
+    -- check cardinal for string and convert if so
     if type(cardinal) == "string" then
         cardinal = self:cardinal_to_num(cardinal)
     end
 
+    -- turn robot to proper cardinal
     if (self.facing + 1) % 4 == cardinal then
         self:turn("r")
     elseif (self.facing -1) % 4 == cardinal then
@@ -46,26 +52,30 @@ function Bot:face_cardinal(cardinal)
     assert(self.facing == cardinal)
 end
 
+-- move
+-- move bot in direction
+-- direction <string> {"u", "d", "f", "n", "e", "s", "w"}
+-- [num] <integer>, if num is nil, then num = 1
 function Bot:move(direction, num)
-    if num == nil then
+    if num == nil then -- User inputs nil num which means move only once
         num = 1
     end
     print(direction .. " " .. num)
-    if direction == "u" then
+    if direction == "u" then -- move up
         for i = 1, num do
-            self:refuelToLevel(1)
+            self:refuel_to_level(1)
             assert(turtle.up())
             self.y = self.y + 1 
         end
-    elseif direction == "d" then
+    elseif direction == "d" then -- move down
         for i = 1, num do
-            self:refuelToLevel(1)
+            self:refuel_to_level(1)
             assert(turtle.down())
             self.y = self.y - 1 
         end
-    elseif direction == "f" then
+    elseif direction == "f" then -- move forward
         for i = 1, num do
-            self:refuelToLevel(1)
+            self:refuel_to_level(1)
             assert(turtle.forward())
             if self.facing == 0 then
                 self.z = self.z - 1
@@ -77,10 +87,10 @@ function Bot:move(direction, num)
                 self.x = self.x - 1
             end
         end
-    else
+    else -- move towards cardinal
         self:face_cardinal(direction)
         for i = 1, num do
-            self:refuelToLevel(1)
+            self:refuel_to_level(1)
             assert(turtle.forward())
             if self.facing == 0 then
                 self.z = self.z - 1
@@ -95,6 +105,10 @@ function Bot:move(direction, num)
     end
 end
 
+-- turn
+-- turn bot in direction
+-- direction <string> {"r", "l", "a"}
+-- [num] <integer> number of times, if num = nil then num = 1
 function Bot:turn(direction, num)
     if num == nil then
         num = 1
@@ -117,7 +131,11 @@ function Bot:turn(direction, num)
     end
 end
 
-function Bot:refuelToLevel(level)
+-- refuel_to_level
+-- refuel turtle to specified fuel level
+-- level <integer>
+-- return <bool> successful refuel
+function Bot:refuel_to_level(level)
     cur_select = turtle.getSelectedSlot()
     while turtle.getFuelLevel() < level do
         turtle.select(16)
@@ -127,10 +145,14 @@ function Bot:refuelToLevel(level)
             error()
         end
     end
-    assert(turtle.select(cur_select))
+    turtle.select(cur_select)
     return true
 end
 
+-- cardinal_to_num
+-- convert <string> cardinal to <integer> cardinal
+-- cardinal <string> {"n", "e", "s", "w"}
+-- return <integer> {0, 1, 2, 3}
 function Bot:cardinal_to_num(cardinal)
     if cardinal == "n"  then
         return 0
@@ -148,51 +170,174 @@ end
 
 -- INVENTORY MANAGEMENT -- 
 
+-- find_slot_of
+-- find first slot
+-- name <string> item name to search
+-- excluded_slots <table {integer}> slots to exclude
+-- inventory <obj> inventory to search, if nil, then inventory = turtle
 function Bot:find_slot_of(name, excluded_slots, inventory)
     local maxSlots = 16
+
     if inventory == nil then
         inventory = turtle
+        if excluded_slots == nil then
+            excluded_slots = self.excluded_slots
+        end
     else
         maxSlots = inventory.size()
+        if excluded_slots == nil then
+            excluded_slots = {}
+        end
     end
-    if excluded_slots == nil then
-        excluded_slots = {}
-    end
+
     for i = 1, maxSlots do
         local item = inventory.getItemDetail(i)
-        if not is_excluded_slot(i, excluded_slots) and item ~= nil and item["name"] == name then
+        if not self:is_excluded_slot(i, excluded_slots) and item ~= nil and item["name"] == name then
             return i
         end
     end
+
     return -1
 end
 
+-- find_slot_of
+-- find all slots
+-- name <string> item name to search
+-- excluded_slots <table {integer}> slots to exclude
+-- inventory <obj> inventory to search, if nil, then inventory = turtle
 function Bot:find_slots_of(name, excluded_slots, inventory)
     local maxSlots = 16
+
     if inventory == nil then
         inventory = turtle
+        if excluded_slots == nil then
+            excluded_slots = self.excluded_slots
+        end
     else
         maxSlots = inventory.size()
+        if excluded_slots == nil then
+            excluded_slots = {}
+        end
     end
-    if excluded_slots == nil then
-        excluded_slots = {}
-    end
+
     local found = {}
     for i = 1, maxSlots do
         local item = inventory.getItemDetail(i)
-        local is_excluded = is_excluded_slot(i, excluded_slots)
-        if not is_excluded and item ~= nil and item["name"] == name then
+        if not self:is_excluded_slot(i, excluded_slots) 
+        and item ~= nil 
+        and item["name"] == name then
             table.insert(found, i)
         end
     end
+
     return found
 end
 
+-- find_empty_slot
+-- find empty slot
+-- excluded_slots <table {integer}> slots to exclude
+-- inventory <obj> inventory to search, if nil, then inventory = turtle
+function Bot:find_empty_slot(excluded_slots, inventory)
+    local maxSlots = 16
+
+    if inventory == nil then
+        inventory = turtle
+        if excluded_slots == nil then
+            excluded_slots = self.excluded_slots
+        end
+    else
+        maxSlots = inventory.size()
+        if excluded_slots == nil then
+            excluded_slots = {}
+        end
+    end
+
+    for i = 1, maxSlots do
+        local item = inventory.getItemDetail(i)
+        if not self:is_excluded_slot(i, excluded_slots) and item == nil then
+            return i
+        end
+    end
+    
+    return -1
+end
+
+-- find_empty_slot
+-- find all empty slots
+-- excluded_slots <table {integer}> slots to exclude
+-- inventory <obj> inventory to search, if nil, then inventory = turtle
+function Bot:find_empty_slots(excluded_slots, inventory)
+    local maxSlots = 16
+
+    if inventory == nil then
+        inventory = turtle
+        if excluded_slots == nil then
+            excluded_slots = self.excluded_slots
+        end
+    else
+        maxSlots = inventory.size()
+        if excluded_slots == nil then
+            excluded_slots = {}
+        end
+    end
+
+    local found = {}
+    for i = 1, maxSlots do
+        local item = inventory.getItemDetail(i)
+        if not self:is_excluded_slot(i, excluded_slots) and item == nil then
+            table.insert(found, i)
+        end
+    end
+
+    return found
+end
+
+-- transfer_to
+-- transfer from_slot to to_slot
+-- from_slot <integer> 
+-- to_slot <integer>
+-- return <bool> success
+function Bot:transfer_to(from_slot, to_slot)
+    local from_item = turtle.getItemDetail(from_slot)
+    local to_item = turtle.getItemDetail(to_slot)
+
+    if fromItem == nil then -- No item to transfer
+        return false
+    end
+    
+    local original_select = turtle.getSelectedSlot()
+    if to_item == nil then
+        turtle.select(from_slot)    
+        turtle.transfer_to(to_slot)
+        return true -- to_slot is empty so can transfer
+    elseif from_item ~= nil and to_item ~= nil and from_item["name"] == to_item["name"] then
+        turtle.select(from_slot)
+        turtle.transfer_to(to_slot)
+        return true -- items are same and can stack
+    elseif from_item ~= nil and to_item ~= nil and from_item["name"] ~= to_item["name"] then
+        local empty_slot = bot:find_empty_slot()
+        if empty_slot ~= -1 then
+            turtle.select(to_slot)
+            turtle.transfer_to(empty_slot)
+            turtle.select(from_slot)
+            turtle.transfer_to(to_slot)
+            return true -- found empty slot
+        else
+            return false -- couldn't find empty slot to replace
+        end
+    else
+        return false -- from_slot empty
+    end
+end
+
+-- place
+-- place block
+-- slot <integer> slot to select and place
+-- item_to_check <string> item name to verify before placing
 function Bot:place(slot, item_to_check)
     local original_slot = turtle.getSelectedSlot()
     if item_to_check ~= nil then
         local item = turtle.getItemDetail(slot)
-        local replace_slot = -1
         if item ~= nil or item["name"] == item_to_check then
             turtle.select(slot)
             turtle.place()
@@ -205,6 +350,11 @@ function Bot:place(slot, item_to_check)
     end
 end
 
+-- is_excluded_slot
+-- check if slot is excluded slot
+-- slot <integer> slot to check if excluded
+-- excluded_slots <table {integer} excluded slots to compare to
+-- return if slot is excluded
 function Bot:is_excluded_slot(slot, excluded_slots)
     if  excluded_slots == nil then
         excluded_slots = self.excluded_slots
@@ -231,7 +381,7 @@ function Bot:push_items(direction, slots, excluded_slots, sleep_if_full)
     end
     local original_select = turtle.getSelectedSlot()
     for i = 1, #slots do
-        if not is_excluded_slot(slots[i], excluded_slots) then
+        if not self:is_excluded_slot(slots[i], excluded_slots) then
             local item = turtle.getItemDetail(i)
             if item ~= nil then
                 turtle.select(i)
@@ -264,6 +414,7 @@ function Bot:push_items(direction, slots, excluded_slots, sleep_if_full)
     turtle.select(original_select)
 end
 
+-- tostring
 function Bot:tostring()
     return "x: " .. tostring(self.x) .. ", y: " .. tostring(self.y) .. ", z: " .. tostring(self.z) .. ", facing: " .. tostring(self.facing)
 end
