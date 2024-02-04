@@ -9,7 +9,7 @@ Bot.__index = Bot
 --  up - 4
 --  down - 5
 
-function Bot.new(x, y, z, facing)
+function Bot.new(x, y, z, facing, excluded_slots)
     local self = setmetatable({}, Bot)
     if facing == "n" then
         self.facing = 0
@@ -25,8 +25,11 @@ function Bot.new(x, y, z, facing)
     self.x = x or 0
     self.y = y or 0
     self.z = z or 0
+    self.excluded_slots = excluded_slots or {16}
     return self
 end
+
+-- MOVEMENT -- 
 
 function Bot:face_cardinal(cardinal)
     if type(cardinal) == "string" then
@@ -141,6 +144,123 @@ function Bot:cardinal_to_num(cardinal)
         print("Invalid cardinal")
         error()
     end
+end
+
+-- INVENTORY MANAGEMENT -- 
+
+function Bot:find_slot_of(name, excluded_slots, inventory)
+    local maxSlots = 16
+    if inventory == nil then
+        inventory = turtle
+    else
+        maxSlots = inventory.size()
+    end
+    if excluded_slots == nil then
+        excluded_slots = {}
+    end
+    for i = 1, maxSlots do
+        local item = inventory.getItemDetail(i)
+        if not is_excluded_slot(i, excluded_slots) and item ~= nil and item["name"] == name then
+            return i
+        end
+    end
+    return -1
+end
+
+function Bot:find_slots_of(name, excluded_slots, inventory)
+    local maxSlots = 16
+    if inventory == nil then
+        inventory = turtle
+    else
+        maxSlots = inventory.size()
+    end
+    if excluded_slots == nil then
+        excluded_slots = {}
+    end
+    local found = {}
+    for i = 1, maxSlots do
+        local item = inventory.getItemDetail(i)
+        local is_excluded = is_excluded_slot(i, excluded_slots)
+        if not is_excluded and item ~= nil and item["name"] == name then
+            table.insert(found, i)
+        end
+    end
+    return found
+end
+
+function Bot:place(slot, item_to_check)
+    local original_slot = turtle.getSelectedSlot()
+    if item_to_check ~= nil then
+        local item = turtle.getItemDetail(slot)
+        if item["name"] == item_to_check then
+            turtle.select(slot)
+            turtle.place()
+            turtle.select(original_slot)
+        end
+    else
+        turtle.select(slot)
+        turtle.place()
+        turtle.select(original_slot)
+    end
+end
+
+function is_excluded_slot(slot, excluded_slots)
+    if  excluded_slots == nil then
+        excluded_slots = self.excluded_slots
+    end
+    for i = 1, #excluded_slots do
+        if slot == excluded_slots[i] then
+            return true
+        end
+    end
+    return false
+end
+
+-- CHEST MANAGEMENT -- 
+-- There is no way to take items from a chest by slot, you only can use turtle.suck() >:(
+function Bot:push_items(direction, slots, excluded_slots, sleep_if_full)
+    if excluded_slots == nil then
+        excluded_slots = self.excluded_slots
+    end
+    if sleep_if_full == nil then
+        sleep_if_full = false
+    end
+    if slots == "all" then
+        slots = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}
+    end
+    local original_select = turtle.getSelectedSlot()
+    for i = 1, #slots do
+        if not is_excluded_slot(slots[i], excluded_slots) then
+            local item = turtle.getItemDetail(i)
+            if item ~= nil then
+                turtle.select(i)
+                if sleep_if_full then
+                    while not turtle.drop() do
+                        print("chest full, sleeping")
+                        sleep(5) 
+                    end
+                else
+                    if direction == "f" then
+                        turtle.drop()
+                    elseif direction == "u" then
+                        turtle.dropUp()
+                    elseif direction == "d" then
+                        turtle.dropDown()
+                    else
+                        print("invalid drop direction")
+                        error()
+                    end
+                end
+                local item_after_drop = turtle.getItemDetail(i)
+                local items_left = 0
+                if item_after_drop ~= nil then
+                    items_left = item_after_drop["count"]
+                end
+                print("pushed " .. item["count"] - items_left .. " " .. item["name"])
+            end
+        end
+    end
+    turtle.select(original_select)
 end
 
 function Bot:tostring()
