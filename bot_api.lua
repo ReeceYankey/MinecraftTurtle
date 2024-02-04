@@ -192,7 +192,8 @@ function Bot:place(slot, item_to_check)
     local original_slot = turtle.getSelectedSlot()
     if item_to_check ~= nil then
         local item = turtle.getItemDetail(slot)
-        if item["name"] == item_to_check then
+        local replace_slot = -1
+        if item ~= nil or item["name"] == item_to_check then
             turtle.select(slot)
             turtle.place()
             turtle.select(original_slot)
@@ -204,7 +205,7 @@ function Bot:place(slot, item_to_check)
     end
 end
 
-function is_excluded_slot(slot, excluded_slots)
+function Bot:is_excluded_slot(slot, excluded_slots)
     if  excluded_slots == nil then
         excluded_slots = self.excluded_slots
     end
