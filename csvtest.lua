@@ -1,6 +1,6 @@
 function parseRow(r, keys)
     local row = {}
-    for match in r:gmatch("[ t]*([^,]+)") do
+    for match in r:gmatch("[ \t]*([^,]+)") do
         row[#row + 1] = match
     end
     if keys == nil then
