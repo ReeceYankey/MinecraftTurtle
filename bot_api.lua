@@ -190,10 +190,28 @@ function Bot:find_slot_of(name, excluded_slots, inventory)
         end
     end
 
+    -- print(textutils.serialise(excluded_slots))
+
     for i = 1, maxSlots do
         local item = inventory.getItemDetail(i)
+        if item == nil then
+            -- print(i .. " {" .. name .. "}" .. "{" .. tostring(item) .. "}")
+            -- print(i .. " " .. tostring(self:is_excluded_slot(i, excluded_slots)) .. " " .. tostring(item ~= nil))
+        else
+            -- print(i .. " {" .. name .. "} " .. "{" .. tostring(item["name"]) .. "}")
+            -- print(i .. " " .. tostring(self:is_excluded_slot(i, excluded_slots)) .. " " .. tostring(item ~= nil) .. " " .. item["name"] == name)
+        end
+        local a = self:is_excluded_slot(i, excluded_slots)
+        local b = item ~= nil
+        local c = false
+        if item ~= nil then
+            c = item["name"] == name
+        end
+        -- print(tostring(a) .. " " .. tostring(b) .. " " .. tostring(c))
         if not self:is_excluded_slot(i, excluded_slots) and item ~= nil and item["name"] == name then
+            -- print("true")
             return i
+        else
         end
     end
 
@@ -298,34 +316,47 @@ end
 -- to_slot <integer>
 -- return <bool> success
 function Bot:transfer_to(from_slot, to_slot)
+
+    if from_slot < 1 or from_slot > 16 or to_slot < 1 or to_slot > 16 then
+        print("transfer fail " .. tostring(from_slot) .. " " .. tostring(to_slot))
+        return false 
+    end
+
     local from_item = turtle.getItemDetail(from_slot)
     local to_item = turtle.getItemDetail(to_slot)
 
-    if fromItem == nil then -- No item to transfer
+    if from_item == nil then -- No item to transfer
+        print("transfer fail " .. tostring(from_slot) .. " " .. tostring(to_slot))
         return false
     end
     
     local original_select = turtle.getSelectedSlot()
     if to_item == nil then
         turtle.select(from_slot)    
-        turtle.transfer_to(to_slot)
+        turtle.transferTo(to_slot)
+        print("transfer " .. tostring(from_slot) .. " " .. tostring(to_slot))
         return true -- to_slot is empty so can transfer
     elseif from_item ~= nil and to_item ~= nil and from_item["name"] == to_item["name"] then
         turtle.select(from_slot)
-        turtle.transfer_to(to_slot)
+        turtle.transferTo(to_slot)
+        print("transfer " .. tostring(from_slot) .. " " .. tostring(to_slot))
         return true -- items are same and can stack
     elseif from_item ~= nil and to_item ~= nil and from_item["name"] ~= to_item["name"] then
-        local empty_slot = bot:find_empty_slot()
+        print("to_slot has item")
+        local empty_slot = self:find_empty_slot()
         if empty_slot ~= -1 then
             turtle.select(to_slot)
-            turtle.transfer_to(empty_slot)
+            turtle.transferTo(empty_slot)
             turtle.select(from_slot)
-            turtle.transfer_to(to_slot)
+            turtle.transferTo(to_slot)
+            print("transfer " .. tostring(from_slot) .. " " .. tostring(to_slot))
             return true -- found empty slot
         else
+            print("transfer fail " .. tostring(from_slot) .. " " .. tostring(to_slot))
             return false -- couldn't find empty slot to replace
         end
     else
+        print("transfer fail " .. tostring(from_slot) .. " " .. tostring(to_slot))
         return false -- from_slot empty
     end
 end
@@ -338,7 +369,7 @@ function Bot:place(slot, item_to_check)
     local original_slot = turtle.getSelectedSlot()
     if item_to_check ~= nil then
         local item = turtle.getItemDetail(slot)
-        if item ~= nil or item["name"] == item_to_check then
+        if item ~= nil and item["name"] == item_to_check then
             turtle.select(slot)
             turtle.place()
             turtle.select(original_slot)
@@ -368,8 +399,29 @@ function Bot:is_excluded_slot(slot, excluded_slots)
 end
 
 -- CHEST MANAGEMENT -- 
+
+-- suck
+-- Sucks items from world or an inventory
 -- There is no way to take items from a chest by slot, you only can use turtle.suck() >:(
-function Bot:push_items(direction, slots, excluded_slots, sleep_if_full)
+-- direction <string> {"f", "u", "d"}
+-- [count] <integer> amount to suck, if nil, then will default to stack
+-- return
+--    sucked <bool>
+--    reason <string>
+function Bot:suck(direction, count)
+    local original_select = turtle.getSelectedSlot()
+    turtle.select(1)
+    if direction == "f" then
+        return turtle.suck(count)
+    elseif direction == "d" then
+        return turtle.suckDown(count)
+    elseif direction == "u" then
+        return turtle.suckUp(count)
+    end
+    turtle.select(original_select)
+end
+
+function Bot:push_items(direction, slots, excluded_slots)
     if excluded_slots == nil then
         excluded_slots = self.excluded_slots
     end
@@ -379,39 +431,83 @@ function Bot:push_items(direction, slots, excluded_slots, sleep_if_full)
     if slots == "all" then
         slots = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}
     end
+
+    print("push_items " .. direction .. " ".. self:table_to_string(slots))
+
     local original_select = turtle.getSelectedSlot()
     for i = 1, #slots do
+        assert(slots[i] > 0 and slots[i] < 17)
         if not self:is_excluded_slot(slots[i], excluded_slots) then
             local item = turtle.getItemDetail(i)
             if item ~= nil then
-                turtle.select(i)
+                turtle.select(slots[i])
                 if sleep_if_full then
-                    while not turtle.drop() do
-                        print("chest full, sleeping")
-                        sleep(5) 
+                    local item_dropped = false
+                    while not item_dropped do
+                        if direction == "f" then
+                            item_dropped = turtle.drop()
+                        elseif direction == "u" then
+                            item_dropped = turtle.dropUp()
+                        elseif direction == "d" then
+                            item_dropped = turtle.dropDown()
+                        else
+                            print("invalid drop direction")
+                            error()
+                        end
                     end
                 else
                     if direction == "f" then
-                        turtle.drop()
+                        item_dropped = turtle.drop()
                     elseif direction == "u" then
-                        turtle.dropUp()
+                        item_dropped = turtle.dropUp()
                     elseif direction == "d" then
-                        turtle.dropDown()
+                        item_dropped = turtle.dropDown()
                     else
                         print("invalid drop direction")
                         error()
                     end
+
                 end
                 local item_after_drop = turtle.getItemDetail(i)
                 local items_left = 0
                 if item_after_drop ~= nil then
                     items_left = item_after_drop["count"]
                 end
-                print("pushed " .. item["count"] - items_left .. " " .. item["name"])
+                print("pushed slot " .. i  .. " ".. item["count"] - items_left .. " " .. item["name"])
             end
         end
     end
     turtle.select(original_select)
+end
+
+-- negate_table
+-- removes values from original table based on negate table
+-- original <table {generic}>
+-- negate <table {generic}>
+-- return table of removed values
+function Bot:negate_table(original, negate)
+    local result = {}
+    for i = 1, #negate do
+        for c = 1, #original do
+            if original[c] ~= negate[i] then
+                table.insert(result, original[c])
+            end
+        end
+    end
+    return result
+end
+
+function Bot:table_to_string(table)
+    local table_string = "{"
+    for i = 1, #table do
+        if i < #table  then
+            table_string = table_string .. tostring(table[i]) .. ", "
+        else
+            table_string = table_string .. tostring(table[i])
+        end
+    end
+    table_string = table_string .. "}"
+    return table_string
 end
 
 -- tostring
