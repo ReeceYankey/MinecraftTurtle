@@ -34,38 +34,40 @@ function home_unload_items()
     bot:move("s", 2)
     bot:move("d")
     bot:face_cardinal("s")
-    local sucked, status = turtle.suckDown()
+    local sucked, status = bot:suck("d")
     -- "No items to take"
     -- "No space for items"
-    while status ~= "No items to take" do
+    local loop = true
+    while loop do
         if status == "No space for items" then
-            item_manage()
+            print("no space for items")
+            bot:move("u")
+            bot:move("n", 2)
+            print("found_spruce")
+            local a = bot:find_slots_of("minecraft:spruce_log")
+            bot:push_items("d", a)
+            bot:transfer_to(bot:find_slot_of("minecraft:spruce_sapling"), 15)
+            bot:move("s", 2)
+            bot:move("d")
+            bot:push_items("f", "all")
+        elseif status == "No items to take" then
+            print("no items to take")
+            bot:move("u")
+            bot:move("n", 2)
+            local a = bot:find_slots_of("minecraft:spruce_log")
+            bot:push_items("d", a)
+            bot:transfer_to(bot:find_slot_of("minecraft:spruce_sapling"), 15)
+            bot:move("s", 2)
+            bot:move("d")
+            bot:push_items("f", "all")
+            loop = false
         end
-        sucked, status = turtle.suckDown()
+        sucked, status = bot:suck("d")
     end
-    item_manage()
-    print("ending item management")
+    -- print("ending item management")
     bot:move("u")
     bot:move("n", 2)
     bot:face_cardinal("w")
-end
-
-function item_manage()
-    local sapling_slot = bot:find_slot_of("minecraft:spruce_sapling")
-    if sapling_slot ~= -1 and sapling_slot ~= 15 then
-        turtle.transferTo(15)
-    end 
-    local logs = bot:find_slots_of("minecraft:spruce_log") 
-    print(textutils.serialise(logs))
-    if #logs > 0 then
-        bot:move("u")
-        bot:move("n", 2)
-        bot:push_items("d", bot:find_slots_of("minecraft:spruce_log"))
-        bot:move("s", 2)
-        bot:move("d")
-    end
-    bot:face_cardinal("s")
-    bot:push_items("f", "all")
 end
 
 function check_and_mine_tree()
@@ -85,7 +87,7 @@ function check_and_mine_tree()
         bot:move("f")
 
         has_block = turtle.inspectUp()
-        while has_block and info["name"] ~= "minecraft:obsidian" do
+        while has_block do
             turtle.digUp()
             bot:move("u")
             has_block = turtle.inspectUp()
@@ -114,19 +116,19 @@ function check_and_mine_tree()
     end
 end
 
-home_unload_items()
+-- home_unload_items()
 
--- while true do
---     for i, v in ipairs(paths) do
---         print(v:tostring())
---         v:perform_walk(bot)
---         if v.b.name == "home" then
---             home_unload_items()
---             print("sleeping zZZZZzz")
---             sleep(300)
---         else
---             check_and_mine_tree()
---         end
---     end
--- end
+while true do
+    for i, v in ipairs(paths) do
+        print(v:tostring())
+        v:perform_walk(bot)
+        if v.b.name == "home" then
+            home_unload_items()
+            print("sleeping zZZZZzz")
+            sleep(300)
+        else
+            check_and_mine_tree()
+        end
+    end
+end
 
