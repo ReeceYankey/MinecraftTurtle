@@ -6,10 +6,10 @@ local b = pathing_api.Waypoint.new("b", 35, 63, 79)
 local c = pathing_api.Waypoint.new("c", 33, 63, 80)
 local d = pathing_api.Waypoint.new("d", 33, 63, 83)
 
-a:addAdjacent(b)
-b:addAdjacent(c, "w s w")
-c:addAdjacent(d)
-d:addAdjacent(a, "e s2 e")
+a:add_adjacent(b)
+b:add_adjacent(c, "w s w")
+c:add_adjacent(d)
+d:add_adjacent(a, "e s2 e")
 
 local bot = bot_api.Bot.new(a.x, a.y, a.z, 0)
 
