@@ -1,3 +1,4 @@
+-- os.loadAPI("queue.lua")
 
 -- Waypoint
 --  Waypoints function as nodes in the graph
@@ -16,7 +17,7 @@ function Waypoint.new(name, x, y, z, next)
     return self
 end
 
-function Waypoint:addAdjacent(adj, walk)
+function Waypoint:add_adjacent(adj, walk)
     table.insert(self.next, Path.new(self, adj, walk))
 end
 
@@ -37,8 +38,9 @@ end
 --  self.a is first waypoint
 --  self.b is second waypoint
 --  self.walk is list of Steps to perform the walk from a to b
---   directions are {n, e, s, w, u, d} optionally followed by a number
---  self.walk example: {n, e, s, 2, w}
+--  directions are {n, e, s, w, u, d} optionally followed by a number
+--  self.walk example: {n, e, s, 2, w}. This will have "n" "e" and "w"
+--  be one step, while s, 2 is two steps
 
 Path = {}
 Path.__index = Path
@@ -51,6 +53,8 @@ function Path.new(a, b, walk)
     return self
 end
 
+-- calculate_distance
+-- return <integer> distance
 function Path:calculate_distance()
     local total_distance = 0
     local i = 1
@@ -70,6 +74,9 @@ function Path:calculate_distance()
     return total_distance
 end
 
+-- perform_walk
+-- Performs the self.walk of path
+-- param bot <Bot> bot to perform walk with
 function Path:perform_walk(bot)
     local i = 1
     while i <= #self.walk do
@@ -85,6 +92,12 @@ function Path:perform_walk(bot)
     end
 end
 
+-- basic_walk
+-- Given path a and path b, verify if a straight line in one
+-- axis and then return the bot instructions to walk from a to b
+-- param a <Waypoint>
+-- param b <Waypoint>
+-- return <table {[<string>, <integer]}> instructions to walk
 function Path:basic_walk(a, b)
     if a.x == b.x and a.y == b.y and a.z == b.z then
         return {} 
@@ -115,6 +128,7 @@ function Path:basic_walk(a, b)
     end
 end
 
+-- tostring
 function Path:tostring()
     local walk_string = "{"
     for i = 1, #self.walk do
@@ -138,6 +152,12 @@ end
 
 -- API Functions
 
+-- find_path
+-- BFS (DFS right now) to find path from start to dest
+-- param start <Waypoint> start waypoint
+-- param dest <Waypoint> destination waypoint
+-- return <bool> status,
+--        <table {<Path>}> list of paths from start to dest
 function find_path(start, dest)
     local queue = {}
     local visited = {}
@@ -150,27 +170,35 @@ function find_path(start, dest)
 
     while #queue > 0 do
         local cur_path = table.remove(queue) 
-        print(cur_path:tostring())
+        -- print(cur_path:tostring())
         local cur_waypoint = cur_path.b
         if cur_waypoint == dest then
-            print("\tfound")
+            -- print("\tfound")
             table.insert(parents, {cur_waypoint, cur_path})
             return true, backtrace(parents, start, dest)
         end
         if index_of(visited, cur_waypoint) == -1 then
-            print("checking " .. cur_waypoint.name)
+            -- print("checking " .. cur_waypoint:tostring())
             table.insert(visited, cur_waypoint)
             for i = 1, #cur_waypoint.next do
-                table.insert(parents, {cur_waypoint, cur_path})
+                if i == 1 then
+                    table.insert(parents, {cur_waypoint, cur_path})
+                end
                 table.insert(queue, cur_waypoint.next[i])
             end
         else
-            print("\tvisited")
+            -- print("\tvisited")
         end
     end
     return false
 end
 
+-- backtrace
+-- given parents of waypoints, reconstruct path from start to dest
+-- param parents <table {{<Waypoint>, <Path>}}
+-- param start <Waypoint>
+-- param dest <Waypoint>
+-- return <table {Path} list of paths going from start to dest
 function backtrace(parents, start, dest)
     waypoints = {dest}
     path = {}
@@ -187,9 +215,10 @@ function backtrace(parents, start, dest)
         table.insert(path, parent[2])
         i = i + 1
     end
-    return path
+    return reverse_table(path)
 end
 
+-- reverse_table
 function reverse_table(t)
     local reverse = {}
     for i = #t, 1, -1 do
@@ -198,6 +227,7 @@ function reverse_table(t)
     return reverse
 end
 
+-- index_of
 function index_of(table, value)
     for i = 1, #table do
         if table[i] == value then
