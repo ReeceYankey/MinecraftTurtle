@@ -497,7 +497,7 @@ function Bot:negate_table(original, negate)
     return result
 end
 
-function Bot:table_to_string(table)
+function table_to_string(table)
     local table_string = "{"
     for i = 1, #table do
         if i < #table  then

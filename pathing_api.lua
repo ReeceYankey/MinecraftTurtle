@@ -17,10 +17,7 @@ function Waypoint.new(name, x, y, z, next)
 end
 
 function Waypoint:addAdjacent(adj, walk)
-    -- local b = Path.new(self, adj, walk or {})
-    -- table.insert(self.next, b)
     table.insert(self.next, Path.new(self, adj, walk))
-    -- table.insert(self.next, adj)
 end
 
 function Waypoint:tostring()
@@ -128,25 +125,84 @@ function Path:tostring()
         end
     end
     walk_string = walk_string .. "}"
-    return tostring(self.a.name) .. "->" .. tostring(self.b.name) .. ", " .. walk_string
+    local a_name = "nil"
+    local b_name = "nil"
+    if self.a ~= nil then
+        a_name = self.a.name
+    end
+    if self.b ~= nil then
+        b_name = self.b.name
+    end
+    return a_name .. "->" .. b_name .. ", " .. walk_string
 end
 
 -- API Functions
 
 function find_path(start, dest)
     local queue = {}
-    table.insert(queue, start)
+    local visited = {}
+
+    local parents = {}
+
+    -- encapsulate start waypoint with a path so function can properly work
+    local starter = Path.new(nil, start, {})
+    table.insert(queue, starter)
 
     while #queue > 0 do
-        local cur = table.remove(queue) 
-        if cur == dest then
-            return true
+        local cur_path = table.remove(queue) 
+        print(cur_path:tostring())
+        local cur_waypoint = cur_path.b
+        if cur_waypoint == dest then
+            print("\tfound")
+            table.insert(parents, {cur_waypoint, cur_path})
+            return true, backtrace(parents, start, dest)
         end
-        for n in cur.next do
-            n = n.b
-            table.insert(queue, n)
+        if index_of(visited, cur_waypoint) == -1 then
+            print("checking " .. cur_waypoint.name)
+            table.insert(visited, cur_waypoint)
+            for i = 1, #cur_waypoint.next do
+                table.insert(parents, {cur_waypoint, cur_path})
+                table.insert(queue, cur_waypoint.next[i])
+            end
+        else
+            print("\tvisited")
         end
     end
     return false
 end
 
+function backtrace(parents, start, dest)
+    waypoints = {dest}
+    path = {}
+    local i = 1
+    while i < 20 and waypoints[#waypoints] ~= start do
+        local parent = {}
+        for p = 1, #parents do
+            print(parents[p][1].name .. " " .. waypoints[#waypoints].name)
+            if parents[p][1] == waypoints[#waypoints] then 
+                parent = parents[p]
+            end
+        end
+        table.insert(waypoints, parent[2].a)
+        table.insert(path, parent[2])
+        i = i + 1
+    end
+    return path
+end
+
+function reverse_table(t)
+    local reverse = {}
+    for i = #t, 1, -1 do
+        table.insert(reverse, t[i]) 
+    end
+    return reverse
+end
+
+function index_of(table, value)
+    for i = 1, #table do
+        if table[i] == value then
+            return i
+        end
+    end  
+    return -1
+end
